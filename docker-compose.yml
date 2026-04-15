@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: gym_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: gym_tracker
+    ports:
+      - "3306:3306"
+    volumes:
+      # Esto inyecta tu script SQL para que se ejecute al crear la BD
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: gym_backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: password
+      DB_NAME: gym_tracker
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Mapeamos la carpeta de logs para poder extraerlos después
+      - ./logs:/app/logs
+
+  frontend:
+    build: ./frontend
+    container_name: gym_frontend
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
