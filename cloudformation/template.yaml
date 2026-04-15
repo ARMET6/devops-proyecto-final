@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Infraestructura para Gym Tracker DevOps: EC2 y S3'
+
+Resources:
+  # ======================================================================
+  # RESPUESTA DE RÚBRICA: Configuración de Security Groups
+  # ¿Cómo se deben configurar para permitir acceso a la aplicación?
+  # R: Se deben crear reglas de entrada (Ingress) solo para los puertos necesarios.
+  # - Puerto 22: Para conectarnos por SSH a la EC2 e instalar Docker/Git.
+  # - Puerto 8080: Para que los usuarios accedan al Frontend web.
+  # - Puerto 3000: Para que el Frontend pueda hacer peticiones a la API (Backend).
+  # 
+  # NOTA DE SEGURIDAD (Reflexión): No es recomendable usar 0.0.0.0/0 en el 
+  # puerto 22 en producción porque deja el acceso SSH abierto a todo internet, 
+  # haciéndolo vulnerable a ataques de fuerza bruta. Debería restringirse
+  # a la IP específica del administrador.
+  # ======================================================================
+  GymTrackerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Permitir acceso web y SSH
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+
+  # Creación de la instancia EC2
+  GymTrackerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro # Capa gratuita
+      # AMI genérica de Amazon Linux 2 (la estándar que usa AWS Academy)
+      ImageId: ami-0c55b159cbfafe1f0 
+      SecurityGroups:
+        - !Ref GymTrackerSecurityGroup
+      Tags:
+        - Key: Name
+          Value: GymTracker-EC2
+
+  # Creación del Bucket S3 para guardar los logs de los entrenamientos
+  GymTrackerLogsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # AWS requiere que los nombres de los buckets sean únicos en todo el mundo.
+      # Usar el AccountId al final ayuda a evitar errores de nombre duplicado.
+      BucketName: !Sub 'gym-tracker-logs-${AWS::AccountId}'
