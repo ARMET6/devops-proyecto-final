@@ -74,4 +74,4 @@ app.delete('/api/entrenamientos/:id', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     writeLog(`Servidor iniciado en el puerto ${PORT}`, 'INFO');
-});)
+});
