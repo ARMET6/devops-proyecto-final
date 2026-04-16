@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Infraestructura para Gym Tracker DevOps: EC2 y S3'
+
+# ======================================================================
+# LA SOLUCIÓN DEVOPS: Parámetro dinámico para obtener la última AMI de Linux
+# ======================================================================
+Parameters:
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+
+Resources:
+  # RESPUESTA DE RÚBRICA: Configuración de Security Groups
+  # ¿Cómo se deben configurar para permitir acceso a la aplicación?
+  # R: Se deben crear reglas de entrada (Ingress) solo para los puertos necesarios.
+  # - Puerto 22: Para conectarnos por SSH a la EC2 e instalar Docker/Git.
+  # - Puerto 8080: Para que los usuarios accedan al Frontend web.
+  # - Puerto 3000: Para que el Frontend pueda hacer peticiones a la API (Backend).
+  GymTrackerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Permitir acceso web y SSH
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+
+  GymTrackerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      # Aquí inyectamos la AMI dinámica obtenida de los parámetros de arriba
+      ImageId: !Ref LatestAmiId 
+      # VINCULAMOS TU LLAVE PARA PODER ENTRAR POR SSH
+      KeyName: vockey
+      SecurityGroups:
+        - !Ref GymTrackerSecurityGroup
+      Tags:
+        - Key: Name
+          Value: GymTracker-EC2
+
+  GymTrackerLogsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'gym-tracker-logs-${AWS::AccountId}'
