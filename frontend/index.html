@@ -2,41 +2,83 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gym Tracker</title>
+    <title>Gym Tracker Pro</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #333; }
-        ul { list-style-type: none; padding: 0; }
-        li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; }
+        :root { --primary: #007bff; --danger: #dc3545; --dark: #212529; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; padding: 20px; color: var(--dark); }
+        .container { max-width: 700px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
+        .form-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+        button { cursor: pointer; padding: 10px 15px; border: none; border-radius: 6px; transition: 0.3s; }
+        .btn-add { background: var(--primary); color: white; width: 100%; grid-column: span 2; font-weight: bold; }
+        .btn-add:hover { background: #0056b3; }
+        .card { background: #fff; border-left: 5px solid var(--primary); padding: 15px; margin-top: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .btn-del { background: var(--danger); color: white; font-size: 12px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Bitácora de Entrenamientos</h2>
-        <button onclick="cargarEntrenamientos()">Cargar Rutinas</button>
-        <ul id="lista-entrenamientos"></ul>
+        <h2>🏋️‍♂️ Registro de Entrenamientos</h2>
+        
+        <div class="form-group">
+            <select id="rutina">
+                <option value="Push">Push (Empuje)</option>
+                <option value="Pull">Pull (Jalón)</option>
+                <option value="Leg">Leg (Pierna)</option>
+            </select>
+            <input type="text" id="ejercicio" placeholder="Ej: Press Militar">
+            <input type="number" id="series" placeholder="Series">
+            <input type="number" id="reps" placeholder="Reps">
+            <button class="btn-add" onclick="agregarEntrenamiento()">Guardar Entrenamiento</button>
+        </div>
+
+        <div id="lista-entrenamientos"></div>
     </div>
 
     <script>
-        // Usaremos una ruta relativa para que funcione bien con Docker más adelante
+        // Declaración en mayúsculas para la conexión dinámica
         const API_URL = `http://${window.location.hostname}:3000/api/entrenamientos`;
 
         async function cargarEntrenamientos() {
-            try {
-                const response = await fetch(apiUrl);
-                const data = await response.json();
-                const lista = document.getElementById('lista-entrenamientos');
-                lista.innerHTML = '';
-                data.forEach(entrenamiento => {
-                    const li = document.createElement('li');
-                    li.textContent = `[${entrenamiento.rutina}] ${entrenamiento.ejercicio} - ${entrenamiento.series}x${entrenamiento.repeticiones}`;
-                    lista.appendChild(li);
-                });
-            } catch (error) {
-                console.error('Error al cargar la data:', error);
-            }
+            // Invocación correcta respetando el camelCase/UpperSnakeCase
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            const container = document.getElementById('lista-entrenamientos');
+            container.innerHTML = '';
+            data.forEach(item => {
+                container.innerHTML += `
+                    <div class="card">
+                        <div>
+                            <strong>${item.rutina}</strong>: ${item.ejercicio} <br>
+                            <small>${item.series} series x ${item.repeticiones} reps</small>
+                        </div>
+                        <button class="btn-del" onclick="borrarEntrenamiento(${item.id})">Borrar</button>
+                    </div>`;
+            });
         }
+
+        async function agregarEntrenamiento() {
+            const data = {
+                rutina: document.getElementById('rutina').value,
+                ejercicio: document.getElementById('ejercicio').value,
+                series: document.getElementById('series').value,
+                repeticiones: document.getElementById('reps').value
+            };
+            await fetch(API_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            cargarEntrenamientos();
+        }
+
+        async function borrarEntrenamiento(id) {
+            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            cargarEntrenamientos();
+        }
+
+        window.onload = cargarEntrenamientos;
     </script>
 </body>
 </html>
