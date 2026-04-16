@@ -20,7 +20,7 @@
 
     <script>
         // Usaremos una ruta relativa para que funcione bien con Docker más adelante
-        const apiUrl = 'http://localhost:3000/api/entrenamientos'; 
+        const API_URL = `http://${window.location.hostname}:3000/api/entrenamientos`;
 
         async function cargarEntrenamientos() {
             try {
